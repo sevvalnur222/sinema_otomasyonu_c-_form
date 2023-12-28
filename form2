@@ -1,0 +1,173 @@
+using Npgsql;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Drawing.Text;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace iilk_form_deneme
+{
+    public partial class Frm_Ekle_Cikart : Form
+    {
+        private Dictionary<int, List<bool>> seatStatusByHour = new Dictionary<int, List<bool>>();
+        private RichTextBox richTextBoxSeatStatus;
+        public Frm_Ekle_Cikart()
+        {
+            InitializeComponent();
+
+
+            GenerateRandomSeatStatus(14);
+        }
+
+        NpgsqlConnection baglanti = new NpgsqlConnection("server=localhost;port=5432;" +
+          "Database=dbproje; user ID=postgres; password=12345");
+
+
+        private void GenerateRandomSeatStatus(int hour)
+        {
+            Random random = new Random();
+            List<bool> seatStatus = new List<bool>();
+            for (int i = 0; i < 20; i++)
+            {
+                // Rastgele koltuk durumu oluştur
+                bool isOccupied = random.Next(2) == 0; // 50% olasılıkla dolu
+                seatStatus.Add(isOccupied);
+            }
+
+            // Saatlere göre koltuk durumlarını sakla
+            seatStatusByHour[hour] = seatStatus;
+        }
+
+        private void btnShowSeatStatus_Click(object sender, EventArgs e)
+        {
+            // Seçilen saate göre koltuk durumlarını göster
+            if (seansSaati.SelectedItem != null)
+            {
+                int selectedHour = (int)seansSaati.SelectedItem;
+                List<bool> seatStatus = seatStatusByHour[selectedHour];
+
+                // Koltuk durumlarını ekrana yazdır
+                richTextBoxSeatStatus.Clear();
+                for (int i = 0; i < seatStatus.Count; i++)
+                {
+                    richTextBoxSeatStatus.AppendText($"Seat {i + 1}: {(seatStatus[i] ? "Dolu" : "Boş")}\n");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Lütfen bir saat seçin.");
+            }
+        }
+
+
+        int sayac = 0;
+        private void Frm_Ekle_Cikart_Load(object sender, EventArgs e)
+        {
+            sayac = 1;
+            for (int i = 0; i < 5; i++) 
+            {
+                for (int j = 0; j < 9; j++)
+                {
+                    Button btn = new Button();
+                    btn.Size = new Size(44, 30);
+                    btn.BackColor = Color.White;
+                    btn.Location = new Point(j*40 + 20,i* 40 +30);
+                    btn.Name = sayac.ToString();
+                    btn.Text = sayac.ToString();
+                    if(j==4)
+                    {
+                        continue;
+                    }
+                    sayac++;
+                    this.panel1.Controls.Add(btn);
+                    btn.Click += Btn_Click;
+                    
+                }
+
+
+            }
+
+
+            baglanti.Open();
+            NpgsqlDataAdapter da = new NpgsqlDataAdapter("select*from film", baglanti);
+            DataTable dt = new DataTable();
+            da.Fill(dt);
+            film_adi.DisplayMember = "filmadi";
+            film_adi.DataSource = dt;
+            baglanti.Close();
+        }
+
+        private void Btn_Click(object sender,EventArgs e)
+        {
+
+            Button b = (Button)sender;
+
+            if (b.BackColor==Color.White)
+            {
+                koltuk_no.Text = b.Text;
+            }
+            
+              b.BackColor = Color.Red;
+        }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void panel1_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void film_adi_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void seansSaati_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Btn_Bilet_Al_Click(object sender, EventArgs e)
+        {
+
+           
+            MessageBox.Show("Bilet alma işlemi başarıyla gerçekleşti.");
+            Button b = (Button)sender;
+            film_adi.SelectedIndex = -1;
+            koltuk_no.Clear();
+            seansSaati.SelectedIndex = -1;
+          
+
+            baglanti.Open();
+            NpgsqlCommand komut1 = new NpgsqlCommand("insert into bilet (filmadi,koltukno,seanssaati,biletid)" +
+                " values (@p1,@p2,@p3,@4)", baglanti);
+            komut1.Parameters.AddWithValue("@p1", film_adi.Text);
+            komut1.Parameters.AddWithValue("@p2", koltuk_no.Text);
+            komut1.Parameters.AddWithValue("@p3", seansSaati.Text);
+            komut1.Parameters.AddWithValue("@p4", int.Parse(bilet_id.Text));
+            komut1.ExecuteNonQuery();
+            baglanti.Close();
+            MessageBox.Show("Koltuk ekleme işlemi başarıyla gerçekleşti.");
+
+
+        }
+
+        private void koltuk_no_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void bilet_id_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+    }
+}
