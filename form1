@@ -1,0 +1,109 @@
+using Npgsql;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Data.Common;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace iilk_form_deneme
+{
+    public partial class Form1 : Form
+    {
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        NpgsqlConnection baglanti = new NpgsqlConnection("server=localhost;port=5432;" +
+            "Database=dbproje; user ID=postgres; password=12345");
+
+        private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+
+        }
+
+        private void Btn_Listele_Click_1(object sender, EventArgs e)
+        {
+            string sorgu = "select * from film order by filmid asc;";
+            NpgsqlDataAdapter da = new NpgsqlDataAdapter(sorgu, baglanti);
+            DataSet ds = new DataSet();
+            da.Fill(ds);
+            dataGridView1.DataSource = ds.Tables[0];
+            
+
+        }
+
+        private void Btn_Bilet_Al_Click(object sender, EventArgs e)
+        {
+            Frm_Ekle_Cikart frm2 = new Frm_Ekle_Cikart();
+            frm2.ShowDialog();
+        }
+        private void Btn_EkleClick(object sender, EventArgs e)
+        {
+            baglanti.Open();
+            NpgsqlCommand komut1 = new NpgsqlCommand("insert into film (filmid,filmadi,filmcikistarihi)" +
+                " values (@p1,@p2,@p3)",baglanti);
+            komut1.Parameters.AddWithValue("@p1",int.Parse(Txt_Filmid.Text));
+            komut1.Parameters.AddWithValue("@p2", Txt_Filmadi.Text);
+            komut1.Parameters.AddWithValue("@p3", DateTime.Parse(Txt_Film_Cikistarihi.Text));
+            komut1.ExecuteNonQuery();
+            baglanti.Close();
+            MessageBox.Show("Film ekleme işlemi başarıyla gerçekleşti.");
+        }
+        private void Btn_CıkartClick(object sender, EventArgs e)
+        {
+            baglanti.Open();
+            NpgsqlCommand komut2 = new NpgsqlCommand("delete from film where filmid=@p1", baglanti);
+            komut2.Parameters.AddWithValue("@p1", int.Parse(Txt_Filmid.Text));
+            komut2.ExecuteNonQuery();
+            baglanti.Close();
+            MessageBox.Show("Film silme işlemi başarıyla gerçekleşti.");
+
+        }
+
+        private void Btn_GuncelleClick(object sender, EventArgs e)
+        {
+            baglanti.Open();
+            NpgsqlCommand komut3 = new NpgsqlCommand("update film set filmadi=@p1,filmcikistarihi=@p2 where filmid=@p3 ", baglanti);
+            komut3.Parameters.AddWithValue("@p1",(Txt_Filmadi.Text));
+            komut3.Parameters.AddWithValue("@p2", DateTime.Parse(Txt_Film_Cikistarihi.Text));
+            komut3.Parameters.AddWithValue("@p3", int.Parse(Txt_Filmid.Text));
+            komut3.ExecuteNonQuery();
+            baglanti.Close();
+            MessageBox.Show("Film güncelleme işlemi başarıyla gerçekleşti.");
+        }
+
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Txt_filmara_TextChanged(object sender, EventArgs e)
+        {
+            baglanti.Open();
+
+            // SQL sorgusunu parametrelerle oluştur
+            string sorgu = "SELECT * FROM film WHERE filmadi LIKE @aramaTerimi";
+            using (NpgsqlDataAdapter da = new NpgsqlDataAdapter(sorgu, baglanti))
+            {
+                // Parametre ekleyerek SQL enjeksiyonunu önle
+                da.SelectCommand.Parameters.AddWithValue("@aramaTerimi", "%" + Txt_filmara.Text + "%");
+
+                // DataSet kullanarak verileri çek ve DataGridView'e yükle
+                DataSet ds = new DataSet();
+                da.Fill(ds);
+                dataGridView1.DataSource = ds.Tables[0];
+            }
+        }
+    }
+}
